@@ -8,6 +8,8 @@ Metamorphic testing does not aspire to replace oracle based input/output testing
 
 This library tracks Zig master until Zig 1.0 is released.
 
+The repository contains a few [test examples](https://github.com/cryptocode/marble/blob/main/src/example_tests.zig)
+
 ## Resources
 * [Hillel Wayne's blog post on Metamorphic Testing (highly recommended)](https://www.hillelwayne.com/post/metamorphic-testing/)
 * [Test your Machine Learning Algorithm with Metamorphic Testing](https://medium.com/trustableai/testing-ai-with-metamorphic-testing-61d690001f5c)

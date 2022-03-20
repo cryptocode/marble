@@ -132,11 +132,11 @@ pub const RunConfiguration = struct {
 pub fn run(comptime T: type, testcase: *T, config: RunConfiguration) !bool {
     if (config.verbose) std.debug.print("\n", .{});
     comptime var metamorphicTest = analyzeTest(T);
-    var initial_value = @field(testcase, "value");
-
     if (metamorphicTest.before_function != null) {
         testcase.before(Phase.Test);
     }
+
+    var initial_value = testcase.value;
 
     // Execute on the initial value. The result is used as the baseline to check if a relation
     // holds after transformations.

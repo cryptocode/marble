@@ -99,3 +99,68 @@ test "query" {
     var query_test = QueryTest{ .value = .{} };
     try std.testing.expect(try marble.run(QueryTest, &query_test, .{ .skip_combinations = false, .verbose = false }));
 }
+
+/// Test some metamorphic relations of binary search
+/// MT relations courtesy of @jacobdweightman
+const BinarySearchTest = struct {
+    const S = struct {
+        fn order(context: void, lhs: usize, rhs: usize) std.math.Order {
+            _ = context;
+            return std.math.order(lhs, rhs);
+        }
+    };
+
+    /// The value is the binary search result qindex
+    value: ?usize = undefined,
+    arr: []const usize = undefined,
+    testing_accidental_insert: bool = undefined,
+
+    pub fn before(self: *BinarySearchTest, phase: marble.Phase) void {
+        if (phase == .Combination) {
+            self.testing_accidental_insert = false;
+        }
+    }
+
+    /// Test that basic relations hold:
+    ///   if x = A[k], then binarySearch(x, A) = k
+    pub fn transformSimple(self: *BinarySearchTest) void {
+        var x = self.arr[self.value.?];
+        self.value = std.sort.binarySearch(usize, x, self.arr, {}, S.order);
+    }
+
+    // This transform will catch an error where the value being searched for is
+    // accidentally being inserted into the array:
+    //   if A[k-1] < x < A[k+1] and x != A[k], then binarySearch(x, A) = -1
+    pub fn transformAccidentalInsert(self: *BinarySearchTest) void {
+        self.testing_accidental_insert = true;
+        if (self.value.? == 0 or self.value.? + 1 >= self.arr.len) return;
+        var x = self.arr[self.value.? - 1] + 1;
+        if (x == self.arr[self.value.?]) x += 1;
+        if (x >= self.arr[self.value.? + 1]) return;
+        self.value = std.sort.binarySearch(usize, x, self.arr, {}, S.order);
+    }
+
+    /// Test binary search array splitting correctness:
+    //    if x = A[k], then binarySearch(A[k-1], A) = k-1 and binarySearch(A[k+1], A) = k + 1
+    pub fn transformSplitting(self: *BinarySearchTest) void {
+        var x = self.arr[self.value.?];
+        self.value = std.sort.binarySearch(usize, x, self.arr, {}, S.order);
+    }
+
+    pub fn check(self: *BinarySearchTest, org: ?usize, new: ?usize) bool {
+        return (new == null and self.testing_accidental_insert) or org.? == new.?;
+    }
+
+    pub fn execute(self: *BinarySearchTest) ?usize {
+        return self.value;
+    }
+};
+
+test "std.sort.binarySearch" {
+    const array: []const usize = &.{ 4, 6, 10, 15, 18, 25, 40 };
+    var i: usize = 0;
+    while (i < array.len) : (i += 1) {
+        var bs_test = BinarySearchTest{ .value = i, .arr = array };
+        try std.testing.expect(try marble.run(BinarySearchTest, &bs_test, .{ .skip_combinations = true }));
+    }
+}
