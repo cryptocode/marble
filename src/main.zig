@@ -57,12 +57,12 @@ pub const Phase = enum {
 /// Returns a container type to hold metamorphic testing functions after analyzing a test case
 fn MetamorphicTest(comptime TestType: type, comptime OutputType: type) type {
     return struct {
-        transformers: []const fn (*TestType) void,
+        transformers: []*const fn (*TestType) void,
         transformer_names: []const []const u8,
-        check_function: fn (*TestType, OutputType, OutputType) bool,
-        execute_function: fn (*TestType) OutputType,
-        before_function: ?fn (*TestType, Phase) void = null,
-        after_function: ?fn (*TestType, Phase) void = null,
+        check_function: *const fn (*TestType, OutputType, OutputType) bool,
+        execute_function: *const fn (*TestType) OutputType,
+        before_function: ?*const fn (*TestType, Phase) void = null,
+        after_function: ?*const fn (*TestType, Phase) void = null,
     };
 }
 
@@ -85,12 +85,12 @@ fn analyzeTest(comptime T: type) MetamorphicTest(T, OutputTypeOf(T)) {
     const OutputType = OutputTypeOf(T);
     const functions = @typeInfo(T).Struct.decls;
     comptime var transformer_function_count: usize = 0;
-    comptime var transformer_functions: [functions.len]fn (*T) void = undefined;
+    comptime var transformer_functions: [functions.len]*const fn (*T) void = undefined;
     comptime var transformer_function_names: [functions.len][]const u8 = undefined;
-    comptime var check_function: fn (*T, OutputType, OutputType) bool = undefined;
-    comptime var execute_function: fn (*T) OutputType = undefined;
-    comptime var before_function: ?fn (*T, Phase) void = null;
-    comptime var after_function: ?fn (*T, Phase) void = null;
+    comptime var check_function: *const fn (*T, OutputType, OutputType) bool = undefined;
+    comptime var execute_function: *const fn (*T) OutputType = undefined;
+    comptime var before_function: ?*const fn (*T, Phase) void = null;
+    comptime var after_function: ?*const fn (*T, Phase) void = null;
 
     inline for (functions) |f| {
         if (comptime std.mem.startsWith(u8, f.name, "transform")) {
