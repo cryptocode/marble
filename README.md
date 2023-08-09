@@ -6,7 +6,7 @@ This library tracks Zig master and was last tested on `0.12.0-dev.4472+1c7798a3c
 
 Metamorphic testing is a powerful technique that provides additional test coverage by applying a number of transformations to test input, and then checking if certain relations still hold between the outputs. Marble will automatically run through all possible combinations of these transformations.
 
-Metamorphic testing does not aspire to replace oracle based input/output testing, but should rather be viewed as a new gadget in the toolbox. While it requires some creativity and effort to come up with a good metamorphic test, you might be rewarded with the uncovering of issues that would otherwise go unnoticed. This applies not only to correctness tests, but also non-functional tests such as performance.
+Here's a [great introduction by](https://www.cockroachlabs.com/blog/metamorphic-testing-the-database/) Cockroach Labs. I highly recommend reading before using this library.
 
 The repository contains a few [test examples](https://github.com/cryptocode/marble/blob/main/src/example_tests.zig)
 
