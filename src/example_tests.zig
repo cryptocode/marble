@@ -2,7 +2,7 @@ const std = @import("std");
 const marble = @import("main.zig");
 
 const SinusTest = struct {
-    const tolerance = std.math.epsilon(f64) * 20;
+    const tolerance = std.math.floatEps(f64) * 20;
 
     /// This test has a single value, but you could also design the test to take an
     /// array as input. The transformations, check and execute functions would then
@@ -17,7 +17,7 @@ const SinusTest = struct {
 
     /// Adding half the epsilon must still cause the relation to hold given the tolerance
     pub fn transformEpsilon(self: *SinusTest) void {
-        self.value = self.value + std.math.epsilon(f64) / 2.0;
+        self.value = self.value + std.math.floatEps(f64) / 2.0;
     }
 
     /// A metamorphic relation is a relation between outputs in different executions.

@@ -165,7 +165,7 @@ pub fn run(comptime T: type, testcase: *T, config: RunConfiguration) !bool {
         for (combination.items) |transformer_index| {
             const tr = metamorphicTest.transformers[transformer_index];
             if (config.verbose) std.debug.print("  >> {s}\n", .{metamorphicTest.transformer_names[transformer_index]});
-            @call(.{}, tr, .{testcase});
+            @call(.auto, tr, .{testcase});
         }
 
         // Execute

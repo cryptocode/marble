@@ -2,7 +2,7 @@
 
 Marble is an experimental [metamorphic testing](https://en.wikipedia.org/wiki/Metamorphic_testing) library for Zig.
 
-This library tracks Zig master (stage 2) until Zig 1.0 is released.
+This library tracks Zig master and was last tested on `0.12.0-dev.4472+1c7798a3c`
 
 Metamorphic testing is a powerful technique that provides additional test coverage by applying a number of transformations to test input, and then checking if certain relations still hold between the outputs. Marble will automatically run through all possible combinations of these transformations.
 
@@ -87,7 +87,7 @@ You will get compile time errors if the requirements for a metamorphic test are 
 In short, you must provide a `value` field, a `check` function, an `execute` function and one or more `transform...` functions.
 
 ### Writing transformations
-Add one more functions starting with `transform...` 
+Add one or more functions starting with `transform...`
 
 Marble will execute all combinations of the transformation functions. After every
 combination, `execute` is called followed by `check`.
