@@ -1,6 +1,6 @@
 <img align="right" width="320" src="https://user-images.githubusercontent.com/34946442/159163318-432052e3-69c7-4598-aaac-74d54f67c8b4.png">
 
-Marble is an experimental [metamorphic testing](https://en.wikipedia.org/wiki/Metamorphic_testing) library for Zig.
+Marble is a [metamorphic testing](https://en.wikipedia.org/wiki/Metamorphic_testing) library for Zig.
 
 This library tracks Zig master and was last tested on `0.12.0-dev.4472+1c7798a3c`
 
@@ -82,7 +82,7 @@ test "sinus" {
 }
 ```
 
-You will get compile time errors if the requirements for a metamorphic test are not met. Even making a typo like `transformPi` will be caught (you can add other non-public functions though)
+You will get compile time errors if the requirements for a metamorphic test are not met.
 
 In short, you must provide a `value` field, a `check` function, an `execute` function and one or more `transform...` functions.
 
