@@ -1,12 +1,16 @@
 const std = @import("std");
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const marble_mod = b.addModule("marble", .{
+        .root_source_file = b.path("src/main.zig"),
+    });
+
     const lib = b.addStaticLibrary(.{
         .name = "marble",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -14,10 +18,11 @@ pub fn build(b: *std.build.Builder) void {
 
     const tests = b.addTest(.{
         .name = "example_tests",
-        .root_source_file = .{ .path = "src/example_tests.zig" },
+        .root_source_file = b.path("src/example_tests.zig"),
         .target = target,
         .optimize = optimize,
     });
+    tests.root_module.addImport("marble", marble_mod);
 
     const example_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run library tests");

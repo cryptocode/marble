@@ -1,5 +1,5 @@
 const std = @import("std");
-const marble = @import("main.zig");
+const marble = @import("marble");
 
 const SinusTest = struct {
     const tolerance = std.math.floatEps(f64) * 20;
@@ -12,6 +12,7 @@ const SinusTest = struct {
 
     /// The mathematical property "sin(x) = sin(π − x)" must hold
     pub fn transformPi(self: *SinusTest) void {
+        // If you flip this to + instead of - you'll observe how metamorphic tests fail.
         self.value = std.math.pi - self.value;
     }
 
@@ -124,7 +125,7 @@ const BinarySearchTest = struct {
     /// Test that basic relations hold:
     ///   if x = A[k], then binarySearch(x, A) = k
     pub fn transformSimple(self: *BinarySearchTest) void {
-        var x = self.arr[self.value.?];
+        const x = self.arr[self.value.?];
         self.value = std.sort.binarySearch(usize, x, self.arr, {}, S.order);
     }
 
@@ -143,7 +144,7 @@ const BinarySearchTest = struct {
     /// Test binary search array splitting correctness:
     //    if x = A[k], then binarySearch(A[k-1], A) = k-1 and binarySearch(A[k+1], A) = k + 1
     pub fn transformSplitting(self: *BinarySearchTest) void {
-        var x = self.arr[self.value.?];
+        const x = self.arr[self.value.?];
         self.value = std.sort.binarySearch(usize, x, self.arr, {}, S.order);
     }
 

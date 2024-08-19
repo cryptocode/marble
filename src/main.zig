@@ -54,70 +54,29 @@ pub const Phase = enum {
     Combination,
 };
 
-/// Returns a container type to hold metamorphic testing functions after analyzing a test case
-fn MetamorphicTest(comptime TestType: type, comptime OutputType: type) type {
+/// Returns the type representing a discovered transformer function
+fn Transformer(comptime TestType: type) type {
     return struct {
-        transformers: []*const fn (*TestType) void,
-        transformer_names: []const []const u8,
-        check_function: *const fn (*TestType, OutputType, OutputType) bool,
-        execute_function: *const fn (*TestType) OutputType,
-        before_function: ?*const fn (*TestType, Phase) void = null,
-        after_function: ?*const fn (*TestType, Phase) void = null,
+        function: *const fn (*TestType) void,
+        name: []const u8,
     };
 }
 
-/// Extracts the `execute` function return type
-fn OutputTypeOf(comptime T: type) type {
+/// A metamorphic test-case is expected to have a number of functions whose name
+/// starts with "transform". Combinations of these functions will be executed
+/// during test runs.
+fn findTransformers(comptime T: type) []const Transformer(T) {
     const functions = @typeInfo(T).Struct.decls;
+    var transformers: []const Transformer(T) = &[_]Transformer(T){};
     inline for (functions) |f| {
-        if (comptime std.mem.eql(u8, f.name, "execute")) {
-            return @typeInfo(@TypeOf(@field(T, f.name))).Fn.return_type.?;
+        if (std.mem.startsWith(u8, f.name, "transform")) {
+            transformers = transformers ++ &[_]Transformer(T){.{
+                .function = @field(T, f.name),
+                .name = f.name,
+            }};
         }
     }
-
-    @compileError("Missing 'execute' function in metamorphic test");
-}
-
-/// Analyze a test case type to discover metamorphic functions and validate
-/// that it's well-formed.
-/// Returns an instance of MetamorphicTest(TestcaseType, OutputType)
-fn analyzeTest(comptime T: type) MetamorphicTest(T, OutputTypeOf(T)) {
-    const OutputType = OutputTypeOf(T);
-    const functions = @typeInfo(T).Struct.decls;
-    comptime var transformer_function_count: usize = 0;
-    comptime var transformer_functions: [functions.len]*const fn (*T) void = undefined;
-    comptime var transformer_function_names: [functions.len][]const u8 = undefined;
-    comptime var check_function: *const fn (*T, OutputType, OutputType) bool = undefined;
-    comptime var execute_function: *const fn (*T) OutputType = undefined;
-    comptime var before_function: ?*const fn (*T, Phase) void = null;
-    comptime var after_function: ?*const fn (*T, Phase) void = null;
-
-    inline for (functions) |f| {
-        if (comptime std.mem.startsWith(u8, f.name, "transform")) {
-            transformer_functions[transformer_function_count] = @field(T, f.name);
-            transformer_function_names[transformer_function_count] = f.name;
-            transformer_function_count += 1;
-        } else if (comptime std.mem.eql(u8, f.name, "check")) {
-            check_function = @field(T, f.name);
-        } else if (comptime std.mem.eql(u8, f.name, "execute")) {
-            execute_function = @field(T, f.name);
-        } else if (comptime std.mem.eql(u8, f.name, "before")) {
-            before_function = @field(T, f.name);
-        } else if (comptime std.mem.eql(u8, f.name, "after")) {
-            after_function = @field(T, f.name);
-        } else if (comptime f.is_pub) {
-            @compileError("Invalid name of public " ++ @typeName(T) ++ " member: " ++ f.name);
-        }
-    }
-
-    return MetamorphicTest(T, OutputTypeOf(T)){
-        .transformers = transformer_functions[0..transformer_function_count],
-        .transformer_names = transformer_function_names[0..transformer_function_count],
-        .check_function = check_function,
-        .execute_function = execute_function,
-        .before_function = before_function,
-        .after_function = after_function,
-    };
+    return transformers;
 }
 
 /// Configuration of a test run
@@ -131,20 +90,18 @@ pub const RunConfiguration = struct {
 /// Run a testcase, returns true if all succeed
 pub fn run(comptime T: type, testcase: *T, config: RunConfiguration) !bool {
     if (config.verbose) std.debug.print("\n", .{});
-    comptime var metamorphicTest = analyzeTest(T);
-    if (metamorphicTest.before_function != null) {
-        testcase.before(Phase.Test);
-    }
+    const metamorphicTest = comptime findTransformers(T);
+    if (@hasDecl(T, "before")) testcase.before(Phase.Test);
 
-    var initial_value = testcase.value;
+    const initial_value = testcase.value;
 
     // Execute on the initial value. The result is used as the baseline to check if a relation
     // holds after transformations.
-    var org_output = testcase.execute();
+    const org_output = testcase.execute();
 
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
-    var combinations = try generateAllCombinations(metamorphicTest.transformers.len, arena.allocator());
+    var combinations = try generateAllCombinations(metamorphicTest.len, arena.allocator());
     for (combinations.items) |combination| {
         if (combination.items.len > 1 and config.skip_combinations) {
             if (config.verbose) std.debug.print("Skipping transformation combinations\n", .{});
@@ -155,40 +112,36 @@ pub fn run(comptime T: type, testcase: *T, config: RunConfiguration) !bool {
         testcase.value = initial_value;
 
         // The before-function is free to update the inital value set above
-        if (metamorphicTest.before_function != null) {
-            testcase.before(Phase.Combination);
-        }
+        if (@hasDecl(T, "before")) testcase.before(Phase.Combination);
 
         if (config.verbose) std.debug.print(">> Combination\n", .{});
 
         // Run through all value transformations
         for (combination.items) |transformer_index| {
-            const tr = metamorphicTest.transformers[transformer_index];
-            if (config.verbose) std.debug.print("  >> {s}\n", .{metamorphicTest.transformer_names[transformer_index]});
-            @call(.auto, tr, .{testcase});
+            const tr = metamorphicTest[transformer_index];
+            if (config.verbose) std.debug.print("  >> {s}\n", .{tr.name});
+
+            @call(.auto, tr.function, .{testcase});
         }
 
         // Execute
-        var transformed_output = testcase.execute();
+        const transformed_output = testcase.execute();
 
         // Check if relation still holds
         if (!testcase.check(org_output, transformed_output)) {
             std.debug.print("Test case failed with transformation(s):\n", .{});
             for (combination.items) |transformer_index| {
-                std.debug.print("  >> {s}\n", .{metamorphicTest.transformer_names[transformer_index]});
+                const tr = metamorphicTest[transformer_index];
+                std.debug.print("  >> {s}\n", .{tr.name});
             }
 
             return false;
         }
 
-        if (metamorphicTest.after_function != null) {
-            testcase.after(Phase.Combination);
-        }
+        if (@hasDecl(T, "after")) testcase.after(Phase.Combination);
     }
 
-    if (metamorphicTest.after_function != null) {
-        testcase.after(Phase.Test);
-    }
+    if (@hasDecl(T, "after")) testcase.after(Phase.Test);
 
     for (combinations.items) |*combination| {
         combination.deinit();
