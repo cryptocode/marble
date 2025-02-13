@@ -105,9 +105,8 @@ test "query" {
 /// MT relations courtesy of @jacobdweightman
 const BinarySearchTest = struct {
     const S = struct {
-        fn order(context: void, lhs: usize, rhs: usize) std.math.Order {
-            _ = context;
-            return std.math.order(lhs, rhs);
+        fn order(context: usize, rhs: usize) std.math.Order {
+            return std.math.order(context, rhs);
         }
     };
 
@@ -126,7 +125,7 @@ const BinarySearchTest = struct {
     ///   if x = A[k], then binarySearch(x, A) = k
     pub fn transformSimple(self: *BinarySearchTest) void {
         const x = self.arr[self.value.?];
-        self.value = std.sort.binarySearch(usize, x, self.arr, {}, S.order);
+        self.value = std.sort.binarySearch(usize, self.arr, x, S.order);
     }
 
     // This transform will catch an error where the value being searched for is
@@ -138,14 +137,14 @@ const BinarySearchTest = struct {
         var x = self.arr[self.value.? - 1] + 1;
         if (x == self.arr[self.value.?]) x += 1;
         if (x >= self.arr[self.value.? + 1]) return;
-        self.value = std.sort.binarySearch(usize, x, self.arr, {}, S.order);
+        self.value = std.sort.binarySearch(usize, self.arr, x, S.order);
     }
 
     /// Test binary search array splitting correctness:
     //    if x = A[k], then binarySearch(A[k-1], A) = k-1 and binarySearch(A[k+1], A) = k + 1
     pub fn transformSplitting(self: *BinarySearchTest) void {
         const x = self.arr[self.value.?];
-        self.value = std.sort.binarySearch(usize, x, self.arr, {}, S.order);
+        self.value = std.sort.binarySearch(usize, self.arr, x, S.order);
     }
 
     pub fn check(self: *BinarySearchTest, org: ?usize, new: ?usize) bool {

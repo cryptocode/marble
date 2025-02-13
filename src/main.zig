@@ -66,7 +66,7 @@ fn Transformer(comptime TestType: type) type {
 /// starts with "transform". Combinations of these functions will be executed
 /// during test runs.
 fn findTransformers(comptime T: type) []const Transformer(T) {
-    const functions = @typeInfo(T).Struct.decls;
+    const functions = @typeInfo(T).@"struct".decls;
     var transformers: []const Transformer(T) = &[_]Transformer(T){};
     inline for (functions) |f| {
         if (std.mem.startsWith(u8, f.name, "transform")) {
