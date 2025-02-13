@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }} with Zig ${{ matrix.zig_version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: 
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+          - ubuntu-24.04-arm
+        zig_version: [ "0.14.0-dev.3187+d4c85079c", "master" ]
+
+    steps:      
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: ${{ matrix.zig_version }}
+
+      - name: Build project
+        run: zig build
+
+      - name: Run tests
+        run: zig build test --summary all
