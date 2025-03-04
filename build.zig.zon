@@ -1,5 +1,5 @@
 .{
-    .name = "marble",
+    .name = .marble,
     .version = "0.1.0",
     .paths = .{
         "build.zig",
@@ -9,4 +9,5 @@
         "LICENSE",
         "README.md",
     },
+    .fingerprint = 0xdf0f25ff70e782ed,
 }
