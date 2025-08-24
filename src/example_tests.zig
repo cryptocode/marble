@@ -37,7 +37,7 @@ test "sinus" {
     var i: f64 = 1;
     while (i < 100) : (i += 1) {
         var t = SinusTest{ .value = i };
-        try std.testing.expect(try marble.run(SinusTest, &t, .{}));
+        try std.testing.expect(try marble.run(SinusTest, &t, std.testing.allocator, .{}));
     }
 }
 
@@ -98,7 +98,7 @@ const QueryTest = struct {
 
 test "query" {
     var query_test = QueryTest{ .value = .{} };
-    try std.testing.expect(try marble.run(QueryTest, &query_test, .{ .skip_combinations = false, .verbose = false }));
+    try std.testing.expect(try marble.run(QueryTest, &query_test, std.testing.allocator, .{ .skip_combinations = false, .verbose = false }));
 }
 
 /// Test some metamorphic relations of binary search
@@ -161,6 +161,6 @@ test "std.sort.binarySearch" {
     var i: usize = 0;
     while (i < array.len) : (i += 1) {
         var bs_test = BinarySearchTest{ .value = i, .arr = array };
-        try std.testing.expect(try marble.run(BinarySearchTest, &bs_test, .{ .skip_combinations = true }));
+        try std.testing.expect(try marble.run(BinarySearchTest, &bs_test, std.testing.allocator, .{ .skip_combinations = true }));
     }
 }

@@ -6,19 +6,19 @@ const std = @import("std");
 /// Generate an (n take r) list of transformer indices
 /// Number of combinations returned is n! / (r! (n-r)!)
 fn generateCombinations(n: usize, r: usize, allocator: std.mem.Allocator) !std.ArrayList(std.ArrayList(usize)) {
-    var combinations = std.ArrayList(std.ArrayList(usize)).init(allocator);
-    var combination = std.ArrayList(usize).init(allocator);
+    var combinations = std.ArrayList(std.ArrayList(usize)).empty;
+    var combination = std.ArrayList(usize).empty;
 
     // Start with the smallest lexicographic combination
     {
         var i: usize = 0;
         while (i < r) : (i += 1) {
-            try combination.append(i);
+            try combination.append(allocator, i);
         }
     }
 
     while (combination.items[r - 1] < n) {
-        try combinations.append(try combination.clone());
+        try combinations.append(allocator, try combination.clone(allocator));
 
         // Next combination in lexicographic order
         var k = r - 1;
@@ -38,10 +38,10 @@ fn generateCombinations(n: usize, r: usize, allocator: std.mem.Allocator) !std.A
 
 /// Generate the combinations for every n = 0..count-1 and r = 1..count
 fn generateAllCombinations(transformation_count: usize, allocator: std.mem.Allocator) !std.ArrayList(std.ArrayList(usize)) {
-    var res = std.ArrayList(std.ArrayList(usize)).init(allocator);
+    var res = std.ArrayList(std.ArrayList(usize)).empty;
     var i: usize = 1;
     while (i <= transformation_count) : (i += 1) {
-        try res.appendSlice((try generateCombinations(transformation_count, i, allocator)).items[0..]);
+        try res.appendSlice(allocator, (try generateCombinations(transformation_count, i, allocator)).items[0..]);
     }
     return res;
 }
@@ -88,7 +88,7 @@ pub const RunConfiguration = struct {
 };
 
 /// Run a testcase, returns true if all succeed
-pub fn run(comptime T: type, testcase: *T, config: RunConfiguration) !bool {
+pub fn run(comptime T: type, testcase: *T, allocator: std.mem.Allocator, config: RunConfiguration) !bool {
     if (config.verbose) std.debug.print("\n", .{});
     const metamorphicTest = comptime findTransformers(T);
     if (@hasDecl(T, "before")) testcase.before(Phase.Test);
@@ -99,9 +99,9 @@ pub fn run(comptime T: type, testcase: *T, config: RunConfiguration) !bool {
     // holds after transformations.
     const org_output = testcase.execute();
 
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
-    var combinations = try generateAllCombinations(metamorphicTest.len, arena.allocator());
+    const combinations = try generateAllCombinations(metamorphicTest.len, arena.allocator());
     for (combinations.items) |combination| {
         if (combination.items.len > 1 and config.skip_combinations) {
             if (config.verbose) std.debug.print("Skipping transformation combinations\n", .{});
@@ -143,9 +143,5 @@ pub fn run(comptime T: type, testcase: *T, config: RunConfiguration) !bool {
 
     if (@hasDecl(T, "after")) testcase.after(Phase.Test);
 
-    for (combinations.items) |*combination| {
-        combination.deinit();
-    }
-    combinations.deinit();
     return true;
 }

@@ -18,14 +18,14 @@ jobs:
           - macos-latest
           - windows-latest
           - ubuntu-24.04-arm
-        zig_version: [ "0.14.0-dev.3187+d4c85079c", "master" ]
+        zig_version: [ "master" ]
 
     steps:      
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Install Zig
-        uses: mlugg/setup-zig@v1
+        uses: mlugg/setup-zig@v2
         with:
           version: ${{ matrix.zig_version }}
 

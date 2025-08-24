@@ -2,7 +2,7 @@
 
 Marble is a [metamorphic testing](https://en.wikipedia.org/wiki/Metamorphic_testing) library for Zig.
 
-This library tracks Zig master and was last tested on `0.14.0-dev.3187+d4c85079c`
+The main branch tracks Zig master. Use a tagged release to target a specific Zig version.
 
 Metamorphic testing is a powerful technique that provides additional test coverage by applying a number of transformations to test input, and then checking if certain relations still hold between the outputs. Marble will automatically run through all possible combinations of these transformations.
 
@@ -28,13 +28,6 @@ To build and run test examples:
 ```bash
 zig build
 zig build test
-```
-
-## Importing the library
-Add Marble as a Zig package in your build file, or simply import it directly after vendoring/adding a submodule:
-
-```zig
-const marble = @import("marble/main.zig");
 ```
 
 ## Writing tests
@@ -73,12 +66,12 @@ const SinusTest = struct {
     }
 };
 
-test "sinus" {
-    var i: f64 = 1;
-    while (i < 100) : (i += 1) {
-        var t = SinusTest{ .value = i };
-        try std.testing.expect(try marble.run(SinusTest, &t, .{}));
-    }
+...
+
+var i: f64 = 1;
+while (i < 100) : (i += 1) {
+    var t = SinusTest{ .value = i };
+    try std.testing.expect(try marble.run(SinusTest, &t, allocator, .{}));
 }
 ```
 
